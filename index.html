@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Maths Arena Pro</title>
+<style>
+  *{box-sizing:border-box;font-family:Poppins,sans-serif}
+  body{margin:0;background:#0a0a0a;color:#fff;display:flex;flex-direction:column;align-items:center}
+ .toolbar{background:#1a1a1a;width:100%;padding:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;border-bottom:2px solid #FFD700;font-size:12px}
+ .toolbar *{padding:6px 10px;border:none;border-radius:6px;font-weight:600}
+ .toolbar button{background:#FFD700;color:#000;cursor:pointer}
+ .canvas{width:360px;height:640px;margin:15px 0;position:relative;border:3px solid #FFD700;overflow:hidden;background:#000}
+ .slidebox{position:absolute;left:5%;width:90%;color:#FFD700;font-size:42px;font-weight:800;line-height:1.3;text-align:center;opacity:0;transform:translateY(-100px)}
+ .brand{position:absolute;bottom:30px;width:100%;text-align:center;font-size:16px;color:#FFD700;font-weight:800;letter-spacing:1px}
+  @keyframes slideDown{0%{opacity:0;transform:translateY(-100px)}20%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(50px)}}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <input type="file" id="bgUpload" accept="image/*" onchange="setBackground(event)"> BG
+  <input type="file" id="bgmUpload" accept="audio/*" onchange="setBGM(event)"> BGM
+  <input type="color" value="#FFD700" onchange="document.querySelector('.slidebox').style.color=this.value"> Text
+  Font: <input type="range" min="32" max="64" value="42" oninput="document.querySelector('.slidebox').style.fontSize=this.value+'px'">
+  Pause: <input type="range" min="1" max="5" value="2" id="pause"> s
+  <button onclick="playScene()">▶ Play Scene</button>
+  <button onclick="startRecording()">● Record</button>
+  <button onclick="stopRecording()">■ Stop</button>
+</div>
+
+<div class="canvas" id="canvas">
+  <div class="slidebox" id="slidebox"></div>
+  <div class="brand">MATHS ARENA</div>
+  <audio id="bgm" loop></audio>
+</div>
+
+<script>
+let recorder, chunks = [];
+const canvas = document.getElementById('canvas');
+const slidebox = document.getElementById('slidebox');
+const bgm = document.getElementById('bgm');
+
+const scenes = [
+  "n⁴ + 4, n ∈ N",
+  "WHICH IDENTITY?",
+  "A) Diff of Squares",
+  "B) Sophie Germain",
+  "C) AM-GM",
+  "D) Always Prime",
+  "COMMENT NOW! 3...2...1"
+];
+
+function setBackground(e){
+  let file = e.target.files[0];
+  let reader = new FileReader();
+  reader.onload = () => canvas.style.background = `url(${reader.result}) center/cover`;
+  reader.readAsDataURL(file);
+}
+
+function setBGM(e){
+  let file = e.target.files[0];
+  bgm.src = URL.createObjectURL(file);
+  bgm.volume = 0.3; // BGM low so voice is clear
+}
+
+function playScene(){
+  bgm.play();
+  let i = 0;
+  let pause = document.getElementById('pause').value * 1000;
+
+  function nextSlide(){
+    if(i >= scenes.length){ bgm.pause(); return; }
+    slidebox.innerText = scenes[i];
+    slidebox.style.animation = 'none';
+    void slidebox.offsetWidth; // reset animation
+    slidebox.style.animation = `slideDown 2s ease forwards`;
+    i++;
+    setTimeout(nextSlide, 2000 + pause); // 2s animation + pause
+  }
+  nextSlide();
+}
+
+// RECORD 60 FPS
+function startRecording(){
+  chunks = [];
+  let stream = canvas.captureStream(60);
+  recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 10000000 });
+  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.onstop = () => {
+    let blob = new Blob(chunks, { type: 'video/webm' });
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'Arena-Pro-60fps.webm'; a.click();
+  };
+  recorder.start();
+  playScene();
+}
+
+function stopRecording(){
+  if(recorder) recorder.stop();
+  bgm.pause();
+}
+</script>
+
+</body>
+</html>
