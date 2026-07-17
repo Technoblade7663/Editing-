@@ -1,104 +1,82 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-<title>Maths Arena Pro</title>
+<title>Arena Technoblade Style</title>
 <style>
-  *{box-sizing:border-box;font-family:Poppins,sans-serif}
-  body{margin:0;background:#0a0a0a;color:#fff;display:flex;flex-direction:column;align-items:center}
- .toolbar{background:#1a1a1a;width:100%;padding:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;border-bottom:2px solid #FFD700;font-size:12px}
- .toolbar *{padding:6px 10px;border:none;border-radius:6px;font-weight:600}
- .toolbar button{background:#FFD700;color:#000;cursor:pointer}
- .canvas{width:360px;height:640px;margin:15px 0;position:relative;border:3px solid #FFD700;overflow:hidden;background:#000}
- .slidebox{position:absolute;left:5%;width:90%;color:#FFD700;font-size:42px;font-weight:800;line-height:1.3;text-align:center;opacity:0;transform:translateY(-100px)}
- .brand{position:absolute;bottom:30px;width:100%;text-align:center;font-size:16px;color:#FFD700;font-weight:800;letter-spacing:1px}
-  @keyframes slideDown{0%{opacity:0;transform:translateY(-100px)}20%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(50px)}}
+  body{margin:0;background:#000;display:flex;flex-direction:column;align-items:center;font-family:Montserrat}
+.toolbar{background:#111;width:100%;padding:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.toolbar *{padding:8px;border-radius:6px;border:none;font-weight:700}
+.toolbar button{background:#FFD700;color:#000;cursor:pointer}
+.canvas{width:360px;height:640px;background:#000;position:relative;overflow:hidden;border:3px solid #FFD700;margin:10px}
+.text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;text-align:center;color:#FFD700;font-size:48px;font-weight:900;line-height:1.2;opacity:0}
+  @keyframes popIn{0%{opacity:0;transform:translate(-50%,-60%) scale(0.9)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-40%) scale(0.95)}}
 </style>
 </head>
 <body>
 
 <div class="toolbar">
-  <input type="file" id="bgUpload" accept="image/*" onchange="setBackground(event)"> BG
-  <input type="file" id="bgmUpload" accept="audio/*" onchange="setBGM(event)"> BGM
-  <input type="color" value="#FFD700" onchange="document.querySelector('.slidebox').style.color=this.value"> Text
-  Font: <input type="range" min="32" max="64" value="42" oninput="document.querySelector('.slidebox').style.fontSize=this.value+'px'">
-  Pause: <input type="range" min="1" max="5" value="2" id="pause"> s
-  <button onclick="playScene()">▶ Play Scene</button>
-  <button onclick="startRecording()">● Record</button>
-  <button onclick="stopRecording()">■ Stop</button>
+  <input type="file" id="bgm" accept="audio/*"> Upload BGM
+  Pause: <input type="range" id="pause" min="0.5" max="3" step="0.5" value="1.5">s
+  <button onclick="play()">▶ Play</button>
+  <button onclick="record()">● Record 60FPS</button>
+  <button onclick="stop()">■ Stop</button>
 </div>
 
 <div class="canvas" id="canvas">
-  <div class="slidebox" id="slidebox"></div>
-  <div class="brand">MATHS ARENA</div>
-  <audio id="bgm" loop></audio>
+  <div class="text" id="text"></div>
 </div>
 
 <script>
-let recorder, chunks = [];
-const canvas = document.getElementById('canvas');
-const slidebox = document.getElementById('slidebox');
-const bgm = document.getElementById('bgm');
-
-const scenes = [
+const lines = [
   "n⁴ + 4, n ∈ N",
   "WHICH IDENTITY?",
-  "A) Diff of Squares",
-  "B) Sophie Germain",
+  "A) DIFF OF SQUARES",
+  "B) SOPHIE GERMAIN",
   "C) AM-GM",
-  "D) Always Prime",
-  "COMMENT NOW! 3...2...1"
+  "D) ALWAYS PRIME",
+  "ANSWER IN COMMENTS!"
 ];
 
-function setBackground(e){
-  let file = e.target.files[0];
-  let reader = new FileReader();
-  reader.onload = () => canvas.style.background = `url(${reader.result}) center/cover`;
-  reader.readAsDataURL(file);
+let recorder, chunks=[];
+const text = document.getElementById('text');
+const canvas = document.getElementById('canvas');
+const bgm = new Audio();
+
+document.getElementById('bgm').onchange = e => {
+  bgm.src = URL.createObjectURL(e.target.files[0]);
+  bgm.volume = 0.25;
+  bgm.loop = true;
 }
 
-function setBGM(e){
-  let file = e.target.files[0];
-  bgm.src = URL.createObjectURL(file);
-  bgm.volume = 0.3; // BGM low so voice is clear
-}
-
-function playScene(){
-  bgm.play();
-  let i = 0;
+function play(){
+  bgm.currentTime = 0; bgm.play();
+  let i=0;
   let pause = document.getElementById('pause').value * 1000;
-
-  function nextSlide(){
-    if(i >= scenes.length){ bgm.pause(); return; }
-    slidebox.innerText = scenes[i];
-    slidebox.style.animation = 'none';
-    void slidebox.offsetWidth; // reset animation
-    slidebox.style.animation = `slideDown 2s ease forwards`;
+  function next(){
+    if(i>=lines.length){bgm.pause();return;}
+    text.innerText = lines[i];
+    text.style.animation = 'none'; void text.offsetWidth;
+    text.style.animation = 'popIn 1.2s ease forwards';
     i++;
-    setTimeout(nextSlide, 2000 + pause); // 2s animation + pause
+    setTimeout(next, 1200 + pause);
   }
-  nextSlide();
+  next();
 }
 
-// RECORD 60 FPS
-function startRecording(){
-  chunks = [];
+function record(){
+  chunks=[];
   let stream = canvas.captureStream(60);
-  recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 10000000 });
-  recorder.ondataavailable = e => chunks.push(e.data);
-  recorder.onstop = () => {
-    let blob = new Blob(chunks, { type: 'video/webm' });
-    let a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = 'Arena-Pro-60fps.webm'; a.click();
-  };
-  recorder.start();
-  playScene();
+  recorder = new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp9',videoBitsPerSecond:12000000});
+  recorder.ondataavailable=e=>chunks.push(e.data);
+  recorder.onstop=()=>{
+    let a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob(chunks,{type:'video/webm'}));
+    a.download='Arena-Technoblade-60fps.webm';a.click();
+  }
+  recorder.start(); play();
 }
-
-function stopRecording(){
-  if(recorder) recorder.stop();
-  bgm.pause();
-}
+function stop(){recorder.stop(); bgm.pause();}
 </script>
-
 </body>
 </html>
